@@ -46,7 +46,8 @@ func getSignal(ctx *gin.Context) {
 func RunApi(logger* log.Logger) {
 
 	router := gin.New()
-	
+	router.Use(gin.Recovery())
+
 	log.Println("Defining routes")
 	router.GET("/signals/1", getSignal)
 

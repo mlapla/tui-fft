@@ -69,6 +69,16 @@ func fetchSignal() []complex128 {
 	return Zip(result.Re, result.Im)
 }
 
+func pollSignals(signals chan []complex128) {
+
+	for {
+		sig := fetchSignal()
+		
+		signals <- sig
+	}
+
+}
+
 func main() {
 
 	setupLogs()
@@ -82,15 +92,26 @@ func main() {
 
 	app := StartApp(handle)
 
+	signals := make(chan []complex128)
+
+	go pollSignals(signals)
+
 	Loop(func(tickerCount int) {
 
-		y := fetchSignal()
-		handle := process(y)
+		select {
+		case sig := <-signals:
 
-		app.SignalPlot.Data[0] = handle.signal_real
-		app.SignalPlot.Data[1] = handle.signal_imag
-		app.FrequencyPlot.Data[0] = handle.frequency_real
-		app.FrequencyPlot.Data[1] = handle.frequency_imag
+			handle := process(sig)
+
+			app.SignalPlot.Data[0] = handle.signal_real
+			app.SignalPlot.Data[1] = handle.signal_imag
+			app.FrequencyPlot.Data[0] = handle.frequency_real
+			app.FrequencyPlot.Data[1] = handle.frequency_imag
+
+		default:
+			log.Println("Polling...")
+		}
+
 		ui.Render(app.Grid)
 	})
 
